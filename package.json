@@ -1,0 +1,26 @@
+{
+  "name": "groth16-verify-wasm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js tests.yaml"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jwasinger/groth16-verify-wasm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jwasinger/groth16-verify-wasm/issues"
+  },
+  "homepage": "https://github.com/jwasinger/groth16-verify-wasm#readme",
+  "dependencies": {
+    "assemblyscript": "github:AssemblyScript/assemblyscript",
+    "wabt": "1.0.11",
+    "gulp": "^4",
+    "js-yaml": "^3.13.1"
+  }
+}
