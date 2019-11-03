@@ -14,8 +14,9 @@ Run the verifier against an example proof: `npm run test`
 
 Examples of a proof and verification key can be found under the `proof` folder.  In the same folder exists a python script `serialize_proof.py` which loads the proof, verification key and serializes them into the input format that the verifier expects.
 
-### Proof/Verification Key Serialization Format (Components listed in the order they are serialized)
+### Verifier Input Data Format 
 
+*Serialization Format*
 ```
 Verification Key:
     A - 96 bytes
@@ -29,10 +30,10 @@ Proof:
     D - 192 bytes
 
 Input Constraints:
-    Number of input constraints - 8 bytes
+    Number of input constraints - 32 bit unsigned integer (little endian)
     Input Constraints - number of input constraints * 96 bytes
 
 Public Inputs:
-    Number of public inputs - 8 bytes (TODO - this can be removed and deduced from the number of input constraints)
+    Number of public inputs - 32 bit unsigned integer (little endian) 
     Public Inputs - number of public inputs * 32 bytes
 ```

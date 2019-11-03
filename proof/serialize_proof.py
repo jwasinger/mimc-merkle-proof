@@ -6,7 +6,7 @@ vk = None
 proof = None
 
 def count_to_8_bytes(count):
-  return binascii.hexlify(count.to_bytes(8, 'little')).decode()
+  return binascii.hexlify(count.to_bytes(4, 'little')).decode()
 
 def num_to_hex(g1):
   result = bytearray.fromhex(hex(int(g1))[2:].zfill(64))

@@ -55,10 +55,10 @@ export function main(): i32 {
   bn128_g2m_toMontgomery(pB, pB);
   bn128_g1m_toMontgomery(pC, pC);
 
-  let num_ic = Uint8Array.wrap(input_data_buff, 1056, 8)[0] as usize;
-  let ic_start = ( input_data_buff as usize ) + 1064;
-  let num_input = Uint8Array.wrap(input_data_buff, 1064 + num_ic * SIZE_F * 3, 8)[0] as usize;
-  let input_start = ( input_data_buff as usize ) + 1064 + num_ic * SIZE_F * 3 + 8;
+  let num_ic = Uint32Array.wrap(input_data_buff, 1056, 1)[0] as u32;
+  let ic_start = ( input_data_buff as usize ) + 1060;
+  let num_input = Uint32Array.wrap(input_data_buff, 1060 + num_ic * SIZE_F * 3, 2)[0] as u32;
+  let input_start = ( input_data_buff as usize ) + 1060 + num_ic * SIZE_F * 3 + 4;
 
   // TODO assert input count == input constraint count - 1
 
