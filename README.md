@@ -2,7 +2,7 @@
 
 ## Setup
 
-Have assemblyscript compiler and gulp installed
+Have assemblyscript compiler and gulp installed.  The project is verified to build with asc 0.7.0 and gulp 4.0.2.
 
 run `build.sh` which compiles groth16 assemblyscript to wasm and merges it with Websnark.
 
