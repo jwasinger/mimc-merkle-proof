@@ -1,40 +1,25 @@
 import { bn128_g1m_toMontgomery, bn128_g2m_toMontgomery, bn128_g1m_neg, bn128_ftm_one, bn128_pairingEq4, bn128_g1m_timesScalar, bn128_g1m_add, bn128_g1m_affine, bn128_g1m_neg} from "./websnark_bn128";
-//import { bn128_g1m_toMontgomery } from "./websnark_bn128";
 
 @external("env", "debug_printMemHex")
 export declare function debug_mem(pos: i32, len: i32): void;
 
-@external("env", "eth2_blockDataSize")
-export declare function eth2_blockDataSize(): i32;
+@external("env", "input_size")
+export declare function input_size(): i32;
 
-@external("env", "eth2_blockDataCopy")
-export declare function eth2_blockDataCopy(outputOffset: i32, srcOffset: i32, length: i32): void;
+@external("env", "input_data_copy")
+export declare function input_data_copy(outputOffset: i32, srcOffset: i32, length: i32): void;
 
-/*
-@external("env", "eth2_loadPreStateRoot")
-export declare function eth2_loadPreStateRoot(offset: i32): void;
-*/
-
-@external("env", "eth2_savePostStateRoot")
-export declare function eth2_savePostStateRoot(offset: i32): void;
-
-/***
-* load test vector
-* TODO: document where the test vector comes from
-*
-* all input coordinates (G1 points and G2 points) are in normal form
-* websnark expects inputs to be in montgomery form. To convert them,
-* use g1m_toMontgomery and g2m_toMontgomery
-*/
+@external("env", "save_output")
+export declare function save_output(offset: i32): void;
 
 export function main(): i32 {
   const SIZE_F = 32;
   let pFq12One = new ArrayBuffer(SIZE_F*12);
   bn128_ftm_one(pFq12One as usize);
 
-  let input_data_len = eth2_blockDataSize();
+  let input_data_len = input_size();
   let input_data_buff = new ArrayBuffer(input_data_len);
-  eth2_blockDataCopy(input_data_buff as usize, 0, input_data_len);
+  input_data_copy(input_data_buff as usize, 0, input_data_len);
 
 
   let pAlfa1 = ( input_data_buff as usize ); // vk_a1.buffer as usize;
@@ -98,7 +83,7 @@ export function main(): i32 {
       return_buf[0] = 0;
   }
 
-  eth2_savePostStateRoot(return_buf.buffer as usize);
+  save_output(return_buf.buffer as usize);
 
   return 0;
 }
