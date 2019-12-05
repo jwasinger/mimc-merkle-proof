@@ -111,6 +111,7 @@ function mergeAndWriteWasm(useBignumHostFuncs, finalFileName) {
     bnFuncsRenamed = bnFuncsRenamed.replace(/\$g1m_affine/g, "\$websnark_bn128/bn128_g1m_affine");
     bnFuncsRenamed = bnFuncsRenamed.replace(/\$g1m_timesScalar/g, "\$websnark_bn128/bn128_g1m_timesScalar");
     bnFuncsRenamed = bnFuncsRenamed.replace(/\$g1m_add/g, "\$websnark_bn128/bn128_g1m_add");
+    bnFuncsRenamed = bnFuncsRenamed.replace(/\$int_zero/g, "\$websnark_bn128/bn128_int_zero");
 
 
     let bnFuncsWat = bnFuncsRenamed;

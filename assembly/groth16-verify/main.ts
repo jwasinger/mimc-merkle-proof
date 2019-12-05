@@ -1,4 +1,4 @@
-import { bn128_g1m_toMontgomery, bn128_g2m_toMontgomery, bn128_g1m_neg, bn128_ftm_one, bn128_pairingEq4, bn128_g1m_timesScalar, bn128_g1m_add, bn128_g1m_affine, bn128_g1m_neg} from "./websnark_bn128";
+import { bn128_int_zero/*, bn128_int_add*/, bn128_g1m_toMontgomery, bn128_g2m_toMontgomery, bn128_g1m_neg, bn128_ftm_one, bn128_pairingEq4, bn128_g1m_timesScalar, bn128_g1m_add, bn128_g1m_affine, bn128_g1m_neg} from "./websnark_bn128";
 
 @external("env", "debug_printMemHex")
 export declare function debug_mem(pos: i32, len: i32): void;
@@ -12,7 +12,64 @@ export declare function input_data_copy(outputOffset: i32, srcOffset: i32, lengt
 @external("env", "save_output")
 export declare function save_output(offset: i32): void;
 
+// bn128 scalar field size 256 bits
+const SIZE_F = 32;
+
+const round_constants: Array<u64> = [
+    0x04af9e46dbc42b94, 0x137981fece56e977, 0x5d00fc101129f08f, 0xd6b781f439c20c0b
+];
+
+function mimc_cipher(/*constants*/): void {
+    //constants = [...];
+    //num_rounds = len(constants) + 1;
+    let num_rounds = 1;
+
+    let xL = new ArrayBuffer(SIZE_F) as usize;
+    let xR = new ArrayBuffer(SIZE_F) as usize;
+    bn128_int_zero(xL);
+    bn128_int_zero(xR);
+
+    let c = new ArrayBuffer(SIZE_F) as usize;
+    let t = new ArrayBuffer(SIZE_F) as usize;
+
+    debug_mem(round_constants.buffer as usize, SIZE_F);
+
+    for (let i = 0; i < num_rounds; i++) {
+        bn128_int_zero(xL);
+        bn128_int_zero(xR);
+
+        debug_mem(xL, SIZE_F);
+
+        /*
+        if (i == 0 || i = num_rounds) {
+          t = k + k_in;
+        } else {
+          c = constants[i];
+          t = k + k[i-1] + c;
+        }
+
+        t2 = t * t;
+        t4 = t2 * t2;
+
+        if (i < num_rounds - 1) {
+          tmp = xL
+          xL = ((i==0) ? xR_in : xR) + t4*t;
+          xR = (i==0) ? xL_in : tmp;
+        } else {
+          tmp = xL;
+          xR_out = xR + t4 * t; 
+          xL_out = xL;
+        }
+        */
+    }
+}
+
 export function main(): i32 {
+    mimc_cipher();
+    return 0;
+}
+
+export function groth16Verify(): i32 {
   const SIZE_F = 32;
   let pFq12One = new ArrayBuffer(SIZE_F*12);
   bn128_ftm_one(pFq12One as usize);
@@ -20,7 +77,6 @@ export function main(): i32 {
   let input_data_len = input_size();
   let input_data_buff = new ArrayBuffer(input_data_len);
   input_data_copy(input_data_buff as usize, 0, input_data_len);
-
 
   let pAlfa1 = ( input_data_buff as usize ); // vk_a1.buffer as usize;
   let pBeta2 = ( input_data_buff as usize ) + 96;
