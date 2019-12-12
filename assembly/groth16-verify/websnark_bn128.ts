@@ -50,5 +50,22 @@ export declare function bn128_g1m_affine(p0: i32, p1: i32): void;
 // @external("watimports", "$int_gte")
 // export declare function int_gte(p0: i32, p1: i32): void;
 
-@external("watimports", "$bn128_int_zero")
-export declare function bn128_int_zero(p: i32): void;
+// these used specifically for MIMC implementation:
+
+@external("watimports", "$bn128_frm_zero")
+export declare function bn128_frm_zero(p: i32): void;
+
+@external("watimports", "$bn128_frm_add")
+export declare function bn128_frm_add(a: i32, b: i32, output: i32): void;
+
+@external("watimports", "$bn128_fr_mul")
+export declare function bn128_fr_mul(a: i32, b: i32, output: i32): void;
+
+@external("watimports", "$bn128_frm_mul")
+export declare function bn128_frm_mul(a: i32, b: i32, output: i32): void;
+
+@external("watimports", "$bn128_frm_toMontgomery")
+export declare function bn128_frm_toMontgomery(input: i32, output: i32): void;
+
+@external("watimports", "$bn128_frm_fromMontgomery")
+export declare function bn128_frm_fromMontgomery(input: i32, output: i32): void;
