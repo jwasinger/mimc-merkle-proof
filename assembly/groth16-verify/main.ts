@@ -16,7 +16,11 @@ export declare function save_output(offset: i32): void;
 const SIZE_F = 32;
 
 // TODO increase rounds after verifying it works for 2
-const num_rounds = 2;
+const num_rounds = 3;
+
+// NOTE websnark does not check whether a value is in the field when doing conversion to 
+// and from montgomery form...  this results in bugs.  Could have security connotations
+// if websnark ever gets used in production
 
 const round_constants: Array<u64> = [
 0x27b688d12488c5d4, 0xfb51f0d66065d8a2, 0x7c7c584d4f8f3759, 0x0fbe43c36a80e36d,
@@ -241,8 +245,8 @@ const round_constants: Array<u64> = [
 
 // memcpy fixed SIZE_F amount
 function memcpy(dest: usize, src: usize): void {
-    for (let i = 0; i < 8; i++) {
-        store<u32>(dest + i * 4, src + i * 4);
+    for (let i = 0; i < 32; i++) {
+        store<u8>(dest + i, load<u8>(src + i));
     }
 }
 
@@ -259,25 +263,26 @@ function mimc_cipher(xL_in: usize, xR_in: usize, k_in: usize, xL_out: usize, xR_
     let t2 = (new Uint8Array(SIZE_F)).buffer as usize;
     let t4 = (new Uint8Array(SIZE_F)).buffer as usize;
 
-    bn128_frm_toMontgomery(round_constants.buffer as usize, round_constants.buffer as usize);
-    bn128_frm_toMontgomery(round_constants.buffer as usize + SIZE_F, round_constants.buffer as usize + SIZE_F);
+    // TODO express the round constants in montgomery form instead of converting them here
+    for (let i = 0; i < num_round_constants; i++) {
+        bn128_frm_toMontgomery(round_constants.buffer as usize + i * SIZE_F, round_constants.buffer as usize + i * SIZE_F);
+    }
 
-    // bn128_fr_mul(round_constants.buffer as usize, round_constants.buffer as usize + SIZE_F, round_constants.buffer as usize + SIZE_F * 2);
-    // bn128_frm_add(round_constants.buffer as usize, round_constants.buffer as usize + SIZE_F, round_constants.buffer as usize + SIZE_F * 2);
-    // bn128_frm_mul(round_constants.buffer as usize, round_constants.buffer as usize + SIZE_F, round_constants.buffer as usize + SIZE_F * 2);
-
-    bn128_frm_fromMontgomery(round_constants.buffer as usize + SIZE_F * 2, round_constants.buffer as usize + SIZE_F * 2);
+    let zero = (new Uint8Array(SIZE_F)).buffer as usize;
+    bn128_frm_zero(zero);
 
     for (let i = 0; i < num_rounds; i++) {
-        let c = ( round_constants.buffer as usize + SIZE_F * i % num_round_constants) as usize;
+
+        let c: usize = 0;
+        if (i == num_rounds - 1) {
+            c = zero;
+        } else {
+            c = ( round_constants.buffer as usize + SIZE_F * ( (i - 1) % num_round_constants)) as usize;
+        }
 
         if ( i == 0 ) {
           // t = k + kL_in;
           bn128_frm_add(k_in, xL_in, t);
-
-          debug_mem(k_in, SIZE_F);
-          debug_mem(xL_in, SIZE_F);
-          debug_mem(t, SIZE_F);
         } else {
           // t = k + k[i-1] + c;
           bn128_frm_add(c, xL, t);
@@ -294,18 +299,14 @@ function mimc_cipher(xL_in: usize, xR_in: usize, k_in: usize, xL_out: usize, xR_
           //tmp = xL
           memcpy(tmp, xL);
 
-          // xL = ((i==0) ? xR_in : xR) + t4*t
-          // xR = (i==0) ? xL_in : tmp
-
           bn128_frm_mul(t4, t, xL);
 
           if (i == 0) {
-              // memcpy(xL, xR_in, SIZE_F);
-              bn128_frm_add(xL, xR_in , xL);
-              memcpy(xL_in, xR);
+              bn128_frm_add(xL, xR_in, xL);
+              memcpy(xR, xL_in);
           } else {
               bn128_frm_add(xL, xR, xL);
-              memcpy(tmp, xR);
+              memcpy(xR, tmp);
           }
         } else {
           // xL_out = xL;
@@ -316,11 +317,6 @@ function mimc_cipher(xL_in: usize, xR_in: usize, k_in: usize, xL_out: usize, xR_
           bn128_frm_add(xR_out, xR, xR_out);
         }
     }
-
-    // debug_mem(xL_out, SIZE_F);
-    // debug_mem(xR_out, SIZE_F);
-    // debug_mem(t2, SIZE_F);
-    // debug_mem(t4, SIZE_F);
 }
 
 // everything argument other than num_inputs is a pointer
@@ -330,15 +326,28 @@ function mimc_compress(inputs: usize, num_inputs: usize, k: usize, output: usize
     let xL_out = (new Uint8Array(SIZE_F)).buffer as usize;
     let xR_out = (new Uint8Array(SIZE_F)).buffer as usize;
 
+    // xL_in = inputs[0]
+    memcpy(xL_in, inputs);
+
+    bn128_frm_toMontgomery(xL_in, xL_in);
+
+    // xR_in = 0
+    bn128_frm_zero(xR_in);
+
+    bn128_frm_toMontgomery(k, k);
+
     for (let i: usize = 1; i < num_inputs; i++) {
+        mimc_cipher(xL_in, xR_in, k, xL_out, xR_out);
+
         // xL_in = xL_out + inputs[i]
         bn128_frm_add(xL_out, inputs + SIZE_F * i, xL_in);
 
         // xR_in = xR_out
         memcpy(xR_in, xR_out);
-
-        mimc_cipher(xL_in, xR_in, k, xL_out, xR_out);
     }
+
+    memcpy(xR_out, output);
+    //bn128_frm_fromMontgomery(xR_out, xR_out);
 }
 
 export function main(): i32 {
@@ -347,16 +356,19 @@ export function main(): i32 {
     - k (SIZE_F)
     - num_inputs (u64 big/little endian?)
     - inputs (SIZE_F * num_inputs)
-
     */
 
     let input_data_len = input_size();
     let input_data_buff = new ArrayBuffer(input_data_len);
     input_data_copy(input_data_buff as usize, 0, input_data_len);
 
-    let inputs = new Uint8Array(SIZE_F * 2) as usize;
-    let num_inputs = 2;
-    let k = (new Uint8Array(SIZE_F)).buffer as usize;
+    let k = input_data_buff as usize;
+
+    let num_inputs = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
+
+    let inputs = ( input_data_buff as usize ) + 40;
+    // debug_mem(inputs, SIZE_F * num_inputs);
+
     let output = new Uint8Array(SIZE_F) as usize;
 
     mimc_compress(inputs, num_inputs, k, output);
