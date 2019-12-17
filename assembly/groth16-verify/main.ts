@@ -350,6 +350,47 @@ function mimc_compress(inputs: usize, num_inputs: usize, k: usize, outputs: usiz
     }
 }
 
+function process_deposit(): i32 {
+    // verify merkle proof that note applied to the current root produces new root
+
+    // update new root
+}
+
+function process withdrawl(): i32 {
+    // verify the merkle proof that the nullifier corresponds to a previously-unused nullifier
+
+    // verify ZK proof that the nullifier corresponds to a note in the tree
+
+    // update the nullifier merkle tree
+
+    // value transfer to the relayer (what if the relayer has code?)
+
+    // transfer 1 eth to the recipient
+}
+
+// will replace the main function in the future
+function mixer_entrypoint(): i32 {
+    /*
+
+    */
+
+    let selector = getSelectorOrFail();
+
+    /*
+    Selectors:
+      - deposit
+      - withdraw
+      - admin (?)
+    */
+
+    switch (selector) {
+        case deposit:
+            break;
+        case withdraw:
+            break;
+    }
+}
+
 export function main(): i32 {
     /*
     Input Serialization format:
