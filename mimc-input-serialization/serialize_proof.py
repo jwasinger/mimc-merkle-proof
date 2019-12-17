@@ -20,11 +20,13 @@ if __name__ == "__main__":
 
     k = mimc_input['k'][2:]
     num_inputs = count_to_8_bytes(len(mimc_input['inputs']))
+    num_outputs = count_to_8_bytes(mimc_input['num_outputs'])
     inputs = ''
 
     for inp in mimc_input['inputs']:
         # print(mimc_input['inputs'][i])
         inputs += inp[2:]
 
+    import pdb; pdb.set_trace()
     print("serialized input:")
-    print('0x'+k+num_inputs+inputs)
+    print('0x'+k+num_inputs+num_outputs+inputs)
