@@ -16,7 +16,7 @@ export declare function save_output(offset: i32): void;
 const SIZE_F = 32;
 
 // TODO this should be set to 220
-const num_rounds = 4;
+const num_rounds = 220;
 
 // NOTE websnark does not check whether a value is in the field when doing conversion to 
 // and from montgomery form...  this results in bugs.  Could have security connotations
@@ -350,6 +350,41 @@ function mimc_compress(inputs: usize, num_inputs: usize, k: usize, outputs: usiz
     }
 }
 
+// converts the round constants to montgomery.  TODO hardcode them in montgomery form
+function mimc_init(): void {
+    let num_round_constants = (round_constants.length / 4 );
+
+    // TODO express the round constants in montgomery form instead of converting them here
+    for (let i = 0; i < num_round_constants; i++) {
+        bn128_frm_toMontgomery(round_constants.buffer as usize + i * SIZE_F, round_constants.buffer as usize + i * SIZE_F);
+    }
+}
+
+function mimc_compress2(left: usize, right: usize, result: usize): void {
+    let xL_in = (new Uint8Array(SIZE_F)).buffer as usize;
+    let xR_in = (new Uint8Array(SIZE_F)).buffer as usize;
+    let xL_out = (new Uint8Array(SIZE_F)).buffer as usize;
+    let xR_out = (new Uint8Array(SIZE_F)).buffer as usize;
+
+    // xL_in = inputs[0]
+    memcpy(xL_in, left);
+
+    // xR_in = 0
+    bn128_frm_zero(xR_in);
+
+    mimc_cipher(xL_in, xR_in, k, xL_out, xR_out);
+
+    // xL_in = xL_out + inputs[i]
+    bn128_frm_add(xL_out, right, xL_in);
+
+    // xR_in = xR_out
+    memcpy(xR_in, xR_out);
+
+    mimc_cipher(xL_in, xR_in, k, xL_out, xR_out);
+
+    memcpy(result, xR_out);
+}
+
 export function main(): i32 {
     /*
     Input Serialization format:
@@ -358,7 +393,7 @@ export function main(): i32 {
     - inputs (SIZE_F * num_inputs)
     */
 
-    let num_round_constants = (round_constants.length / 4 );
+    // let num_round_constants = (round_constants.length / 4 );
     let input_data_len = input_size();
     let input_data_buff = new ArrayBuffer(input_data_len);
     input_data_copy(input_data_buff as usize, 0, input_data_len);
@@ -374,11 +409,6 @@ export function main(): i32 {
     // TODO accept inputs in montgomery form to remove need for conversion here
     for (let i: usize = 0; i < num_inputs; i++) {
         bn128_frm_toMontgomery(inputs + SIZE_F * i, inputs + SIZE_F * i);
-    }
-
-    // TODO express the round constants in montgomery form instead of converting them here
-    for (let i = 0; i < num_round_constants; i++) {
-        bn128_frm_toMontgomery(round_constants.buffer as usize + i * SIZE_F, round_constants.buffer as usize + i * SIZE_F);
     }
 
     let output = (new Uint8Array(SIZE_F * num_outputs)).buffer as usize;
