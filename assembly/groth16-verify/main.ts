@@ -15,8 +15,7 @@ export declare function save_output(offset: i32): void;
 // bn128 point size
 const SIZE_F = 32;
 
-// TODO this should be set to 220
-const num_rounds = 4;
+const num_rounds = 220;
 
 // NOTE websnark does not check whether a value is in the field when doing conversion to 
 // and from montgomery form...  this results in bugs.  Could have security connotations
