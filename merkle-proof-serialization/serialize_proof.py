@@ -31,10 +31,10 @@ if __name__ == "__main__":
         indices.append(count_to_8_bytes(pathIndex))
 
     witnesses = ''.join(witnesses)
+    leaf = proof['leaf']
 
     # TODO replace selector list with the actual index in the tree
     selectors = ''.join(indices)
 
-    import pdb; pdb.set_trace()
     print("serialized input:")
-    print("0x"+root+num_witnesses+witnesses+selectors)
+    print(root+num_witnesses+witnesses+selectors+leaf)

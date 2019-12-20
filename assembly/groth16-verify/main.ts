@@ -369,6 +369,9 @@ function mimc_compress2(left: usize, right: usize, result: usize): void {
     let xL_out = (new Uint8Array(SIZE_F)).buffer as usize;
     let xR_out = (new Uint8Array(SIZE_F)).buffer as usize;
 
+    let k = (new Uint8Array(SIZE_F)).buffer as usize;
+    bn128_frm_zero(k);
+
     // xL_in = inputs[0]
     memcpy(xL_in, left);
 
@@ -385,113 +388,53 @@ function mimc_compress2(left: usize, right: usize, result: usize): void {
 
     mimc_cipher(xL_in, xR_in, k, xL_out, xR_out);
 
-    memcpy(result, xR_out);
+    debug_mem(xL_out, SIZE_F);
+    memcpy(result, xL_out);
 }
 
-export function main(): i32 {
-    /*
-    Input Serialization format:
-    - k (SIZE_F)
-    - num_inputs (u64 big/little endian?)
-    - inputs (SIZE_F * num_inputs)
-    */
 
-    // let num_round_constants = (round_constants.length / 4 );
+// TODO convert everything to montgomery
+
+export function main(): i32 {
     let input_data_len = input_size();
     let input_data_buff = new ArrayBuffer(input_data_len);
     input_data_copy(input_data_buff as usize, 0, input_data_len);
 
-    let k = input_data_buff as usize;
-    bn128_frm_toMontgomery(k, k);
-
+    /*
     let num_inputs = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
     let num_outputs = Uint64Array.wrap(input_data_buff, 40, 1)[0] as usize;
-
-    let inputs = ( input_data_buff as usize ) + 48;
-
-    // TODO accept inputs in montgomery form to remove need for conversion here
-    for (let i: usize = 0; i < num_inputs; i++) {
-        bn128_frm_toMontgomery(inputs + SIZE_F * i, inputs + SIZE_F * i);
-    }
-
-    let output = (new Uint8Array(SIZE_F * num_outputs)).buffer as usize;
-
-    mimc_compress(inputs, num_inputs, k, output, num_outputs);
-
-    return 0;
-}
-
-export function groth16Verify(): i32 {
-  const SIZE_F = 32;
-  let pFq12One = new Uint8Array(SIZE_F*12);
-  bn128_ftm_one(pFq12One as usize);
-
-  let input_data_len = input_size();
-  let input_data_buff = new ArrayBuffer(input_data_len);
-  input_data_copy(input_data_buff as usize, 0, input_data_len);
-
-  let pAlfa1 = ( input_data_buff as usize ); // vk_a1.buffer as usize;
-  let pBeta2 = ( input_data_buff as usize ) + 96;
-  let pGamma2 = (input_data_buff as usize) + 288;
-  let pDelta2 = ( input_data_buff as usize ) + 480; 
-
-  let pA = ( input_data_buff as usize ) + 672;
-  let pB = ( input_data_buff as usize ) + 768;
-  let pC = ( input_data_buff as usize ) + 960;
-
-  bn128_g1m_toMontgomery(pAlfa1, pAlfa1);
-  bn128_g2m_toMontgomery(pBeta2, pBeta2);
-  bn128_g2m_toMontgomery(pDelta2, pDelta2);
-  bn128_g2m_toMontgomery(pGamma2, pGamma2);
-
-  bn128_g1m_toMontgomery(pA, pA);
-  bn128_g2m_toMontgomery(pB, pB);
-  bn128_g1m_toMontgomery(pC, pC);
-
-  let num_ic = Uint32Array.wrap(input_data_buff, 1056, 1)[0] as u32;
-  let ic_start = ( input_data_buff as usize ) + 1060;
-  let num_input = Uint32Array.wrap(input_data_buff, 1060 + num_ic * SIZE_F * 3, 2)[0] as u32;
-  let input_start = ( input_data_buff as usize ) + 1060 + num_ic * SIZE_F * 3 + 4;
-
-  // TODO assert input count == input constraint count - 1
-
-  let pIC = ic_start;
-  bn128_g1m_toMontgomery(pIC, pIC);
-
-  for (let i = 0 as usize; i < num_input; i++ ) {
-    // ICAux <== IC[i+1]
-    let pICAux = pIC + ((i + 1) * SIZE_F * 3);
-
-    // ICAux <== g1m_toMontgomery(ICAux)
-    bn128_g1m_toMontgomery(pICAux, pICAux);
-
-    // ICr <== input[i]
-    let pICr = input_start + (i * SIZE_F);
-
-    /* TODO add this back in after asc compiler bug is fixed
-    if (int_gte(pICr, pr)) {
-      return 1;
-    }
     */
 
-    bn128_g1m_timesScalar(pICAux, pICr, SIZE_F, pICAux);
-    bn128_g1m_add(pICAux, pIC, pIC);
-  }
-  
-  bn128_g1m_affine(pIC, pIC);
-  bn128_g1m_neg(pIC, pIC);
-  bn128_g1m_neg(pC, pC);
-  bn128_g1m_neg(pAlfa1, pAlfa1);
+    mimc_init();
 
-  let return_buf = new Array<u32>(2);
+    let root = ( input_data_buff as usize ); 
+    let num_witnesses = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
 
-  if (!bn128_pairingEq4(pA, pB, pIC, pGamma2, pC, pDelta2, pAlfa1, pBeta2, pFq12One as usize)) {
-      return_buf[0] = 1;
-  } else {
-      return_buf[0] = 0;
-  }
+    let witnesses = num_witnesses + 8;
 
-  save_output(return_buf.buffer as usize);
+    let selectors = witnesses + ( num_witnesses * SIZE_F );
 
-  return 0;
+    let leaf = selectors + ( num_witnesses * 8 );
+
+    let output = (new Uint8Array(SIZE_F)).buffer as usize;
+
+    debug_mem(0, num_witnesses);
+
+    mimc_compress2(leaf, witnesses, output);
+
+    for (let i: usize = 0; i < num_witnesses; i++) {
+        // todo handle direction selectors, selector is only 1 bit so shouldn't have to wrap
+
+        mimc_compress2(output, witnesses + i * SIZE_F, output);
+
+        // selectors += 8;
+    }
+
+    debug_mem(output, SIZE_F);
+    debug_mem(root, SIZE_F);
+
+    // TODO check root == output and save result
+    save_output(output);
+
+    return 0;
 }
