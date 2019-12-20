@@ -339,7 +339,10 @@ function mimc_compress(inputs: usize, num_inputs: usize, k: usize, outputs: usiz
     }
 
     //outputs[0] = xL_out
-    memcpy(outputs, xL_out);
+    //memcpy(outputs, xL_out);
+
+    // TODO document the fact that this function returns in non-montgomery form
+    bn128_frm_fromMontgomery(xL_out, outputs);
 
     // TODO output size larger than 1 un-tested
     for (let i: usize = 0; i < num_outputs - 1; i++) {
