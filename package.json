@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/jwasinger/groth16-verify-wasm#readme",
   "dependencies": {
-    "assemblyscript": "github:AssemblyScript/assemblyscript",
     "wabt": "1.0.11",
     "gulp": "^4",
     "js-yaml": "^3.13.1"
