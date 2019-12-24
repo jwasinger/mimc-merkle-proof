@@ -350,21 +350,45 @@ function mimc_compress(inputs: usize, num_inputs: usize, k: usize, outputs: usiz
     }
 }
 
-function process_deposit(): i32 {
-    // verify merkle proof that note applied to the current root produces new root
+// verify merkle proof and return number of bytes consumed
+function verify_merkle_proof(p_proof: usize): usize {
+    let p_root: usize = p_proof + MERKLE_PROOF_ROOT_OFFSET;
+    let p_computed_root: usize = new Uint8Array(SIZE_F).buffer as usize;
 
-    // update new root
+    compute_root(p_proof, p_computed_root)
+
+    // assert p_roof == p_computed_root
 }
 
-function process withdrawl(): i32 {
-    // verify the merkle proof that the nullifier corresponds to a previously-unused nullifier
+// recompute the proof root, rewriting the existing one if it doesn't match what was computed
+function update_proof(p_proof: usize) {
 
-    // verify ZK proof that the nullifier corresponds to a note in the tree
+}
 
-    // update the nullifier merkle tree
+function process_deposit(): i32 {
+    // assert(receipient amount == 1 eth)
 
-    // value transfer to the relayer (what if the relayer has code?)
+    // verify merkle proof that note applied to the current mixer root produces new root
 
+    // verify_merkle_proof(...)
+
+    // update new root
+
+    // update_merkle_proof(...)
+}
+
+function process withdrawal(): i32 {
+    // assert we have enough gas?
+
+    // Verify the ZKP that pedersen(nullifier + secret) is in mixer root
+
+    // assert(proof leaf == NULL)
+    // verify_merkle_proof(...)
+
+    // proof leaf = nullifier
+    // new_nullifier_root = update_merkle_proof(...)
+
+    // relayer += fee
     // transfer 1 eth to the recipient
 }
 
