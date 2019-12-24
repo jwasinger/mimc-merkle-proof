@@ -388,51 +388,77 @@ function mimc_compress2(left: usize, right: usize, result: usize): void {
 
     mimc_cipher(xL_in, xR_in, k, xL_out, xR_out);
 
-    debug_mem(xL_out, SIZE_F);
     memcpy(result, xL_out);
 }
 
 
-// TODO convert everything to montgomery
-
+// TODO make all numbers in the proof expected to be passed in montgomery form
 export function main(): i32 {
     let input_data_len = input_size();
     let input_data_buff = new ArrayBuffer(input_data_len);
     input_data_copy(input_data_buff as usize, 0, input_data_len);
 
-    /*
-    let num_inputs = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
-    let num_outputs = Uint64Array.wrap(input_data_buff, 40, 1)[0] as usize;
-    */
-
     mimc_init();
 
     let root = ( input_data_buff as usize ); 
+    //debug_mem(root, SIZE_F);
+    bn128_frm_toMontgomery(root, root);
+
+    //debug_mem(0, SIZE_F * 2);
+
     let num_witnesses = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
 
-    let witnesses = num_witnesses + 8;
+    let witnesses = root + 40;
+
+    for (let i: usize = 0; i < num_witnesses; i++) {
+        //debug_mem(witnesses + i * SIZE_F, SIZE_F);
+        bn128_frm_toMontgomery(witnesses + i * SIZE_F, witnesses + i * SIZE_F);
+    }
+
+    //debug_mem(0, SIZE_F * 2);
 
     let selectors = witnesses + ( num_witnesses * SIZE_F );
 
     let leaf = selectors + ( num_witnesses * 8 );
 
-    let output = (new Uint8Array(SIZE_F)).buffer as usize;
+    //debug_mem(leaf, SIZE_F);
+    bn128_frm_toMontgomery(leaf, leaf);
 
-    debug_mem(0, num_witnesses);
+    let output = (new Uint8Array(SIZE_F)).buffer as usize;
 
     mimc_compress2(leaf, witnesses, output);
 
-    for (let i: usize = 0; i < num_witnesses; i++) {
+    for (let i: usize = 1; i < num_witnesses; i++) {
         // todo handle direction selectors, selector is only 1 bit so shouldn't have to wrap
 
+        /*
+        bn128_frm_fromMontgomery(output, output);
+        bn128_frm_fromMontgomery(witnesses + i * SIZE_F, witnesses + i * SIZE_F);
+
+        debug_mem(output, SIZE_F);
+        debug_mem(witnesses + i * SIZE_F, SIZE_F);
+
+        bn128_frm_toMontgomery(output, output);
+        bn128_frm_toMontgomery(witnesses + i * SIZE_F, witnesses + i * SIZE_F);
+        */
+
+        // mimc_compress2(witnesses + i * SIZE_F, output, output);
         mimc_compress2(output, witnesses + i * SIZE_F, output);
+
+        /*
+        bn128_frm_fromMontgomery(output, output);
+        debug_mem(output, SIZE_F);
+        bn128_frm_toMontgomery(output, output);
+        */
+
+        //debug_mem(0, SIZE_F * 2);
 
         // selectors += 8;
     }
 
-    debug_mem(output, SIZE_F);
     debug_mem(root, SIZE_F);
 
+    bn128_frm_fromMontgomery(output, output);
     // TODO check root == output and save result
     save_output(output);
 
