@@ -27,11 +27,17 @@ if __name__ == "__main__":
     for witness in proof['pathElements']:
         witnesses.append(num_to_hex(int(witness)))
 
-    for pathIndex in proof['pathIndices']:
-        indices.append(count_to_8_bytes(pathIndex))
+    index = 0
+    lvl = 1
+
+    for selector in proof['pathIndices']:
+        # indices.append(count_to_8_bytes(pathIndex))
+        index += selector * lvl
+        lvl *= 2
 
     witnesses = ''.join(witnesses)
     leaf = num_to_hex(int(proof['leaf']))
+    index = count_to_8_bytes(index)
 
     # TODO replace selector list with the actual index in the tree
     selectors = ''.join(indices)
@@ -39,4 +45,4 @@ if __name__ == "__main__":
     import pdb; pdb.set_trace()
 
     print("serialized input:")
-    print(root+num_witnesses+witnesses+selectors+leaf)
+    print(root+index+num_witnesses+witnesses+leaf)

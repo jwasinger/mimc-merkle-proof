@@ -401,27 +401,20 @@ export function main(): i32 {
     mimc_init();
 
     let root = ( input_data_buff as usize ); 
-    //debug_mem(root, SIZE_F);
     bn128_frm_toMontgomery(root, root);
 
-    //debug_mem(0, SIZE_F * 2);
+    let selector = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
 
-    let num_witnesses = Uint64Array.wrap(input_data_buff, 32, 1)[0] as usize;
+    let num_witnesses = Uint64Array.wrap(input_data_buff, 40, 1)[0] as usize;
 
-    let witnesses = root + 40;
+    let witnesses = root + 48;
 
     for (let i: usize = 0; i < num_witnesses; i++) {
-        //debug_mem(witnesses + i * SIZE_F, SIZE_F);
         bn128_frm_toMontgomery(witnesses + i * SIZE_F, witnesses + i * SIZE_F);
     }
 
-    //debug_mem(0, SIZE_F * 2);
+    let leaf = witnesses + ( num_witnesses * SIZE_F );
 
-    let selectors = witnesses + ( num_witnesses * SIZE_F );
-
-    let leaf = selectors + ( num_witnesses * 8 );
-
-    //debug_mem(leaf, SIZE_F);
     bn128_frm_toMontgomery(leaf, leaf);
 
     let output = (new Uint8Array(SIZE_F)).buffer as usize;
@@ -429,37 +422,20 @@ export function main(): i32 {
     mimc_compress2(leaf, witnesses, output);
 
     for (let i: usize = 1; i < num_witnesses; i++) {
-        // todo handle direction selectors, selector is only 1 bit so shouldn't have to wrap
+        if (selector % 2 == 0) {
+            mimc_compress2(output, witnesses + i * SIZE_F, output);
+        } else {
+            mimc_compress2(witnesses + i * SIZE_F, output, output);
+        }
 
-        /*
-        bn128_frm_fromMontgomery(output, output);
-        bn128_frm_fromMontgomery(witnesses + i * SIZE_F, witnesses + i * SIZE_F);
-
-        debug_mem(output, SIZE_F);
-        debug_mem(witnesses + i * SIZE_F, SIZE_F);
-
-        bn128_frm_toMontgomery(output, output);
-        bn128_frm_toMontgomery(witnesses + i * SIZE_F, witnesses + i * SIZE_F);
-        */
-
-        // mimc_compress2(witnesses + i * SIZE_F, output, output);
-        mimc_compress2(output, witnesses + i * SIZE_F, output);
-
-        /*
-        bn128_frm_fromMontgomery(output, output);
-        debug_mem(output, SIZE_F);
-        bn128_frm_toMontgomery(output, output);
-        */
-
-        //debug_mem(0, SIZE_F * 2);
-
-        // selectors += 8;
+        // selector = selector / 2;
+        selector /= 2;
     }
 
-    debug_mem(root, SIZE_F);
-
     bn128_frm_fromMontgomery(output, output);
+
     // TODO check root == output and save result
+
     save_output(output);
 
     return 0;
