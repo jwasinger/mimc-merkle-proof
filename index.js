@@ -43,12 +43,15 @@ function getImports(env) {
 
 function parseYaml(file) {
   var testCase = js_yaml.safeLoad(file);
-  var groth16SourceFile = testCase.groth16_verify_source;
+  var wasm_source = testCase.merkle_tree_source;
 
   var testCases = [];
-  for (var i = 0; i < testCase.tests.length; i++) {
-    var expectedResult = Buffer.from(testCase.tests[i].expected, "hex");
-    let input = Buffer.from(testCase.tests[i].input, "hex");
+  let tests = Object.values(testCase.tests);
+
+  // for (var i = 0; i < testCase.tests.length; i++) {
+  for (var i = 0; i < tests.length; i++) {
+    var expectedResult = Buffer.from(tests[i].expected, "hex");
+    let input = Buffer.from(tests[i].input, "hex");
 
     testCases.push({
       input: input,
@@ -58,7 +61,7 @@ function parseYaml(file) {
 
   return {
     tests: testCases,
-    testSource: groth16SourceFile
+    testSource: wasm_source 
   };
 }
 
@@ -73,7 +76,7 @@ function main() {
   }
   var yamlFile = fs.readFileSync(yamlPath, { encoding: "utf8" });
   var testCases = parseYaml(yamlFile);
-  debugger;
+
   var wasmFile = fs.readFileSync(testCases.testSource);
   var wasmModule = new WebAssembly.Module(wasmFile);
 
