@@ -18,6 +18,9 @@ NULL_HASH = hash(0)
 def mimc_compress2(left, right):
     return hash(str(left) + str(right)) # TODO
 
+def get_tree_index(row_idx, lvl=TREE_DEPTH):
+    return row_idx + row_starts[lvl]
+    
 def get_row_index(idx):
     if idx > LARGEST_INDEX:
         raise Exception("index too large for tree size")
@@ -31,7 +34,7 @@ def get_row_index(idx):
 
     return idx - row_starts[-1]
 
-def calc_parent_idx(idx, level):
+def get_parent_idx(idx, level):
     row_idx = idx - row_starts[level]
     if row_idx % 2 == 0:
         # parent_idx = row_idx - level_width[level - 1]
@@ -47,7 +50,7 @@ def hash_level(idxs, lvl):
     result = {}
 
     for left, right in siblings:
-        parent_idx = calc_parent_idx(left['index'], lvl)
+        parent_idx = get_parent_idx(left['index'], lvl)
         parent_value = mimc_compress2(left['value'], right['value'])
         result[parent_idx] = parent_value
 
@@ -95,11 +98,38 @@ def merkleize(indices, values):
 
     return tree
 
-def get_proof(index, tree):
-    for i in reversed(range(TREE_DEPTH + 1)):
-        yield tree[
+def compute_proof(tree, row_index):
+    proof = {
+        'root': None,
+        'leaf': None,
+        'index': None,
+        'witnesses': [],
+    }
 
-def verify_proof(tree, proof):
+    index = get_tree_index(row_index)
+
+    proof['root'] = tree[0]
+    proof['leaf'] = tree[index]
+    proof['index'] = index
+
+    for lvl in reversed(range(TREE_DEPTH + 1)):
+        index = get_parent_idx(index, lvl)
+
+        if index % 2 == 0:
+            if index + 1 in tree:
+                proof['witnesses'].append(tree[index + 1])
+            else:
+                proof['witnesses'].append(NULL_HASH)
+        else:
+            if index - 1 in tree:
+                proof['witnesses'].append(tree[index - 1])
+            else:
+                proof['witnesses'].append(NULL_HASH)
+
+    return proof
+
+
+def verify_proof(proof):
     selector = proof['index']
     computed_root = None
 
@@ -110,11 +140,11 @@ def verify_proof(tree, proof):
 
     selector /= 2
 
-    for witness in range(1, proof['witnesses']):
+    for witness in range(1, len(proof['witnesses'])):
         if selector % 2 == 0:
             computed_root = mimc_compress2(computed_root, witness)
         else:
             computed_root = mimc_compress2(witness, computed_root)
 
     if computed_root != proof['root']:
-        raise new Exception("{} (computed) != {}".format(computed_root, proof['root'])
+        raise Exception("{} (computed) != {}".format(computed_root, proof['root']))
