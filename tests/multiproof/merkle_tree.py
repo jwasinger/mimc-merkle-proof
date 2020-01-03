@@ -1,6 +1,6 @@
 import random
 
-NULL_HASH = 1  # hash(0)
+NULL_HASH = hash(str(0))
 NUM_LEAVES = 1000
 TREE_DEPTH = 2
 LARGEST_INDEX = int( 2 ** (TREE_DEPTH + 1) ) - 2
@@ -13,7 +13,7 @@ LARGEST_INDEX = int( 2 ** (TREE_DEPTH + 1) ) - 2
 
 row_starts = [0, 1] + [2**j + 1 for j in range(1, TREE_DEPTH)]
 
-NULL_HASH = hash(0)
+NULL_HASH = hash(str(0))
 
 def mimc_compress2(left, right):
     return hash(str(left) + str(right)) # TODO
@@ -21,28 +21,30 @@ def mimc_compress2(left, right):
 def get_tree_index(row_idx, lvl=TREE_DEPTH):
     return row_idx + row_starts[lvl]
     
-def get_row_index(idx):
-    if idx > LARGEST_INDEX:
+def get_row_idx(tree_idx):
+    if tree_idx > LARGEST_INDEX:
         raise Exception("index too large for tree size")
 
     for index in range(len(row_starts)):
-        if idx < row_starts[index]:
+        if tree_idx < row_starts[index]:
             if index > 0:
-                return idx - row_starts[index - 1]
+                return tree_idx - row_starts[index - 1]
             else:
                 return 0
 
-    return idx - row_starts[-1]
+    return tree_idx - row_starts[-1]
 
-def get_parent_idx(idx, level):
-    row_idx = idx - row_starts[level]
+
+def get_parent_idx(tree_idx, level):
+    row_idx = tree_idx - row_starts[level]
     if row_idx % 2 == 0:
         # parent_idx = row_idx - level_width[level - 1]
-        parent_idx = idx - (row_starts[level] - row_starts[level - 1])
+        parent_idx = tree_idx - (row_starts[level] - row_starts[level - 1])
     else:
-        parent_idx = idx - (row_starts[level] - row_starts[level - 1] + 1)
+        parent_idx = tree_idx - (row_starts[level] - row_starts[level - 1] + 1)
 
-    return parent_idx
+    # return parent_idx
+    return int(tree_idx / 2)
 
 def hash_level(idxs, lvl):
     idxs = [{'index': index, 'value': value} for index, value in idxs.items()]
@@ -64,7 +66,7 @@ def pair_siblings(nodes):
     # return a list of pairs where x, y in nums, y - x == 1, x % 2 == 0, 
     i = 0
     while i < len(nodes):
-        if get_row_index(nodes[i]['index']) % 2 == 0:
+        if get_row_idx(nodes[i]['index']) % 2 == 0:
             if i+1 < len(nodes) and nodes[i+1]['index'] == nodes[i]['index'] + 1:
                 yield(nodes[i], nodes[i + 1])
                 i += 2
@@ -112,10 +114,10 @@ def compute_proof(tree, row_index):
     proof['leaf'] = tree[index]
     proof['index'] = index
 
-    for lvl in reversed(range(TREE_DEPTH + 1)):
-        index = get_parent_idx(index, lvl)
+    for lvl in reversed(range(TREE_DEPTH)):
+        row_index = get_row_idx(index)
 
-        if index % 2 == 0:
+        if row_index % 2 == 0:
             if index + 1 in tree:
                 proof['witnesses'].append(tree[index + 1])
             else:
@@ -126,11 +128,15 @@ def compute_proof(tree, row_index):
             else:
                 proof['witnesses'].append(NULL_HASH)
 
+        index = get_parent_idx(index, lvl)
+
     return proof
 
 
 def verify_proof(proof):
-    selector = proof['index']
+    index = proof['index']
+    selector = get_row_idx(index)
+
     computed_root = None
 
     if selector % 2 == 0:
@@ -138,13 +144,19 @@ def verify_proof(proof):
     else:
         computed_root = mimc_compress2(proof['witnesses'][0], proof['leaf'])
 
-    selector /= 2
+    lvl = TREE_DEPTH - 1
+    index = get_parent_idx(index, lvl)
 
-    for witness in range(1, len(proof['witnesses'])):
+    for witness in proof['witnesses'][1:]:
+        selector = get_row_idx(index)
+
         if selector % 2 == 0:
             computed_root = mimc_compress2(computed_root, witness)
         else:
             computed_root = mimc_compress2(witness, computed_root)
+
+        index = get_parent_idx(index, lvl)
+        lvl -= 1
 
     if computed_root != proof['root']:
         raise Exception("{} (computed) != {}".format(computed_root, proof['root']))
