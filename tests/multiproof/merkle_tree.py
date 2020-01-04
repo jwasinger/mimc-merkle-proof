@@ -11,7 +11,10 @@ LARGEST_INDEX = int( 2 ** (TREE_DEPTH + 1) ) - 2
 # assume that the root node is at index 0 and the leaves occupy the last
 # 2^DEPTH indices
 
-row_starts = [0, 1] + [2**j + 1 for j in range(1, TREE_DEPTH)]
+row_starts = [0, 1]
+
+for i in range(1, TREE_DEPTH):
+    row_starts.append(row_starts[i] + 2**i)
 
 NULL_HASH = hash(str(0))
 
@@ -34,16 +37,13 @@ def get_row_idx(tree_idx):
 
     return tree_idx - row_starts[-1]
 
-
 def get_parent_idx(tree_idx, level):
     row_idx = tree_idx - row_starts[level]
     if row_idx % 2 == 0:
-        # parent_idx = row_idx - level_width[level - 1]
         parent_idx = tree_idx - (row_starts[level] - row_starts[level - 1])
     else:
         parent_idx = tree_idx - (row_starts[level] - row_starts[level - 1] + 1)
 
-    # return parent_idx
     return int(tree_idx / 2)
 
 def hash_level(idxs, lvl):
@@ -88,7 +88,7 @@ def merkleize(indices, values):
         return { 0: NULL_HASH }
 
     for i in range(len(indices)):
-        tree_idx = i + int(2**TREE_DEPTH / 2) + 1 # add offset to start of bottom level
+        tree_idx = i + int(2**(TREE_DEPTH + 1) / 2) - 1 # add offset to start of bottom level
         tree_levels[TREE_DEPTH][tree_idx] = values[i]
 
     for lvl in reversed(range(0, TREE_DEPTH)):
@@ -110,6 +110,7 @@ def compute_proof(tree, row_index):
 
     index = get_tree_index(row_index)
 
+    import pdb; pdb.set_trace()
     proof['root'] = tree[0]
     proof['leaf'] = tree[index]
     proof['index'] = index
