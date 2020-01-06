@@ -1,16 +1,14 @@
 import unittest
 
-from merkle_tree import merkleize, verify_proof, compute_proof
+from merkle_tree import MerkleProof, MerkleTree, MiMC
 
 class TestMerkleTree(unittest.TestCase):
     def test_basic(self):
-        tree = merkleize([0, 1], [1, 2])
+        hasher = MiMC()
+        tree = MerkleTree([0, 1], [1, 2], 20, hasher)
 
-        proof_0 = compute_proof(tree, 0)
-        # proof_1 = compute_proof(tree, 1)
-
-        verify_proof(proof_0)
-        # verify_proof(proof_1)
+        proof_0 = tree.compute_proof(0)
+        self.assertTrue(proof_0.verify())
 
 if __name__ == "__main__":
     unittest.main()
