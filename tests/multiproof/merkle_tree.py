@@ -1,14 +1,7 @@
 import random
+import unittest
 
-class MiMC:
-    def __init__(self):
-        pass
-
-    def hash(self, left: int, right: int) -> int:
-        return hash(str(left) + str(right))
-
-    def null(self) -> int:
-        return hash(str(0))
+from mimc import MiMC
 
 def make_node(index, value):
     return { 'index': index, 'value': value }
@@ -163,3 +156,14 @@ class MerkleTree:
             index = self.get_parent_idx(index)
 
         return MerkleProof(root, leaf, index, witnesses, self.hasher, selectors)
+
+class TestMerkleTree(unittest.TestCase):
+    def test_basic(self):
+        hasher = MiMC()
+        tree = MerkleTree([0, 1], [1, 2], 20, hasher)
+
+        proof_0 = tree.compute_proof(0)
+        self.assertTrue(proof_0.verify())
+
+if __name__ == "__main__":
+    unittest.main()
